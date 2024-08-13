@@ -1,0 +1,237 @@
+Go to firbase.com 
+signup/login -> (your gmail)
+create a new project -> name it -> Disable google analytics if not needed 
+Now select the Realtime data base in test mode for being able to use it and send requests 
+Go to your project settings -> copy the Web api key for your project (Now this will be the main bridge key to connect and use this realtime-data-base)
+-------------------------------------
+On Your browser search for -> Firebase rest api for realtime database docs -> AUTHENTICATION AND USER MANAGEMENT SECTION OF THE REST API  [https://firebase.google.com/docs/reference/rest/auth#section-get-account-info]
+
+Now using the specific urls we can perform the tasks needed ---> 
+-------------------------------------
+
+***********************************************************************************************************************************************************************************************
+A) For Login ----> Select the Sign in with email / password option of the rest api and use the url with your project api key to handle login via firebase 
+
+Take the login data from your form make and add it as a parameter to the post request and replace your api key
+
+Example :-
+
+const loginData = {
+      email,
+      password,
+      returnSecureToken: true,
+    };
+
+    try {
+      const response = await axios.post(
+        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=[replace your api key here]",
+        loginData,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      console.log("User has successfully logged in.", response.data);
+
+      // Store the token in local storage
+      localStorage.setItem("authToken", response.data.idToken);
+
+      navigate("/homePage");
+    } catch (error) {
+      console.error("Error in logging in:", error);
+      if (error.response && error.response.data && error.response.data.error) {
+        setErrorMessage(error.response.data.error.message);
+      } else {
+        setErrorMessage("Login failed. Please try again.");
+      }
+    }
+***********************************************************************************************************************************************************************************************
+
+
+***********************************************************************************************************************************************************************************************
+B) For Signup ----> Select the Sign up with email / password option of the rest api and use the url with your project api key to handle login via firebase 
+Take the signup data from your form make and add it as a parameter to the post request and replace your api key
+
+Example :-
+const formData = {
+      email,
+      password,
+      returnSecureToken: true
+    };
+
+  try {
+      const response = await axios.post(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=[replace your api key here]`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      console.log("User has successfully signed up.", response.data);
+      setSuccessMessage("Signup successful!");
+
+      // Reset form fields
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      console.error("Error signing up:", error);
+      if (error.response && error.response.data && error.response.data.error) {
+        setErrorMessage(error.response.data.error.message);
+      } else {
+        setErrorMessage("Signup failed. Please try again.");
+      }
+    }
+***********************************************************************************************************************************************************************************************
+
+C)  For Forgot Password And Resetting It ----> Send password reset email option of the rest api and use the url with your project api key to handle password reset via firebase 
+Take the request type and your email address of that very account from your form make and add it as a parameter to the post request and replace your api key
+
+
+Example :-
+ try {
+      setLoader(true);
+
+      const requestData = {
+        requestType: 'PASSWORD_RESET',
+        email: email,
+      };
+
+      await axios.post(
+        "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=[replace your api key here]",
+        requestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      setLoader(false);
+      setMessage('Password reset link sent successfully. Check your email.');
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      setLoader(false);
+      if (error.response && error.response.data && error.response.data.error) {
+        setMessage(`Error: ${error.response.data.error.message}`);
+      } else {
+        setMessage('Failed to send password reset email. Please try again.');
+      }
+    }
+
+***********************************************************************************************************************************************************************************************
+
+***********************************************************************************************************************************************************************************************
+<---IMPORTANT---> 
+D) Posting some data into the firebase realtime database 
+
+-> GO TO YOUR PROJECT -> REALTIME DATABASE OPTION -> NOW COPY THE URL OF THE DATA BASE FROM THERE AND , NOW THIS WILL BE USED TO POST DATA AND CREATE COLLECTIONS IN OUR FIRBASE REALTIME DATABASE 
+-> NOW THE SYNTAX GOES LIKE THIS WE MAKE A POST REQUEST TO THIS ENDPOINT AND AT THE END POINT WE ADD / AND OUR FILENAME.JSON TO IT SO THIS WILL CREATE THAT FILE NAMED WITHIN THE REALTIME DATABASE
+->ALSO NOTE THAT THE FILE SHOULD BE NAMED WITH .JSON EXTENSION 
+-> AND THIS FILE SHALL BE USED TO HOLD THE DATA 
+
+EXAMPLE:-
+ const handleAddExpense = async (e) => {
+    e.preventDefault();
+    const newExpense = {
+      description: expenseDesc,
+      amount: parseFloat(expenseAmt),
+      category: expenseCategory,
+    };
+
+    try {
+      await axios.post(
+        "https://[REPLACE WITH YOUR PROJECT END POINT]/expenses.json",
+        newExpense
+      );
+      fetchExpenses(); // Fetch expenses after adding a new one
+    } catch (err) {
+      console.log(err);
+    }
+
+    setExpenseDesc("");
+    setExpenseAmt("");
+  };
+
+***********************************************************************************************************************************************************************************************
+
+***********************************************************************************************************************************************************************************************
+E) Editing The Data Added To Your Collection IN THE REALTIME DATA BASE 
+
+Syntax-> realtimedataBASEURL/Your Collection Name/${Your Updated Data}
+you just have to make a put request with the updated data to the realtime database end point and also specifying the collection name and the edited item data .json 
+
+
+EXAMPLE:-
+const handleExpenseEdit = async () => {
+    try {
+      const updatedExpense = {
+        description: editDesc,
+        amount: parseFloat(editAmt),
+        category: editCat,
+      };
+
+      await axios.put(
+        `https://[REPLACE WITH YOUR PROJECT END POINT]/[Replace With Your Collection Name]/${editItemId}.json`,
+        updatedExpense
+      );
+      await fetchExpenses();
+      setEditItemId(null);
+    } catch (error) {
+      console.log("Error in editing the item -> " + error);
+    }
+  };
+
+***********************************************************************************************************************************************************************************************
+F)  Deleting The Data Added To Your Collection IN THE REALTIME DATA BASE 
+
+Syntax-> realtimedataBASEURL/Your Collection Name/${id of the item to be deleted}.json
+you just have to make a delete request with the id of the item to be deleted to the realtime database end point and also specifying the collection name 
+
+
+const handleExpenseDelete = async (deleteItemID) => {
+    try {
+      const response = await axios.delete(
+        `https://[REPLACE WITH YOUR PROJECT END POINT]/[Replace With Your Collection Name]/${deleteItemID}.json`
+      );
+      console.log(response);
+      await fetchExpenses(); // Wait for expenses to be fetched after deletion
+    } catch (error) {
+      console.log("Error in deleting the item -> " + error);
+    }
+  };
+
+***********************************************************************************************************************************************************************************************
+
+G) Fetching Data From The Real time data base:- 
+
+Just send a get request to the realtime data base end point with your collection name specified in it ->
+
+EXAMPLE:-
+const fetchExpenses = async () => {
+    try {
+      const response = await axios.get(
+        "https://[REPLACE WITH YOUR PROJECT END POINT]/[Replace With Your Collection Name]"
+      );
+
+      const fetchedData = [];
+      for (const key in response.data) {
+        fetchedData.push({ id: key, ...response.data[key] });
+      }
+      setExpenses(fetchedData);
+
+      const totalAmount = fetchedData.reduce(
+        (total, expense) => total + parseFloat(expense.amount),
+        0
+      );
+      setExpenseTotal(Math.floor(totalAmount));
+    } catch (err) {
+      console.log(
+        "Error in fetching the expenses from firebase realtime database ->" + err
+      );
+    }
+  };
+***********************************************************************************************************************************************************************************************
